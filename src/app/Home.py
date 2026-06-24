@@ -551,10 +551,26 @@ if modelo_path.exists() and metricas_path.exists():
     )
     st.info("👉 Ve a la página **Simulador novedades** para usar el modelo.")
 else:
-    st.warning(
-        "⚠️ Modelo hedónico no entrenado. Corre desde terminal:\n\n"
-        "```bash\nuv run python src/models/run_all.py\n```"
-    )
+    from core import cloud_storage as _cl
+    if _cl.nube_activa():
+        if modelo_path.exists() and not metricas_path.exists():
+            st.info(
+                "El modelo hedónico está cargado y el Simulador de novedades "
+                "funciona. Solo faltan las métricas (R²/MAE) para mostrarlas "
+                "aquí: en tu Mac corré **5-Subir a la nube** otra vez y luego "
+                "**Re-sincronizar** en el panel ☁️ de arriba."
+            )
+        else:
+            st.warning(
+                "⚠️ El modelo hedónico aún no está disponible en la nube. "
+                "Subilo desde tu Mac con **5-Subir a la nube** y luego "
+                "**Re-sincronizar** en el panel ☁️."
+            )
+    else:
+        st.warning(
+            "⚠️ Modelo hedónico no entrenado. Corre desde terminal:\n\n"
+            "```bash\nuv run python src/models/run_all.py\n```"
+        )
 
 # =========================================================================
 # ESTADO DE LAS PROYECCIONES PROPHET (Sprint 3a)

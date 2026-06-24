@@ -226,6 +226,7 @@ ARTEFACTOS_PROCESSED = [
 ]
 ARTEFACTOS_STATE_MODELO = [
     "proyecciones_prophet.parquet", "modelo_hedonico.joblib",
+    "metricas_hedonico.json", "importancias_hedonico.csv",
     "perfiles_estacionales.pkl", "proyecciones_cliente.parquet",
     "perfiles_cliente.parquet",
 ]

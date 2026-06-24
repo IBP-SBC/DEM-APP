@@ -21,14 +21,44 @@ sys.path.insert(0, str(ROOT / "src"))
 
 def _cargar_secrets_a_entorno():
     """Lee .streamlit/secrets.toml y lo expone como un st.secrets simulado,
-    para reutilizar core.cloud_storage sin Streamlit corriendo."""
+    para reutilizar core.cloud_storage sin Streamlit corriendo.
+
+    Robusto a problemas típicos de Mac: comillas tipográficas (smart quotes)
+    que mete TextEdit, BOM, y errores de formato (con mensaje claro en vez de
+    un traceback)."""
     secrets_path = ROOT / ".streamlit" / "secrets.toml"
     if not secrets_path.exists():
         print(f"❌ No se encontró {secrets_path}")
         print("   Crea .streamlit/secrets.toml con la sección [supabase].")
         sys.exit(1)
-    with open(secrets_path, "rb") as f:
-        secrets = tomllib.load(f)
+
+    # Leer como texto y sanear (BOM + comillas tipográficas → rectas)
+    texto = secrets_path.read_text(encoding="utf-8-sig")  # -sig quita BOM
+    reemplazos = {
+        "\u201c": '"', "\u201d": '"',   # comillas dobles curvas
+        "\u2018": "'", "\u2019": "'",   # comillas simples curvas
+        "\u00a0": " ",                   # espacio no separable
+    }
+    for malo, bueno in reemplazos.items():
+        texto = texto.replace(malo, bueno)
+
+    try:
+        secrets = tomllib.loads(texto)
+    except tomllib.TOMLDecodeError as e:
+        print("❌ El archivo .streamlit/secrets.toml tiene un error de formato.")
+        print(f"   Detalle: {e}")
+        print("")
+        print("   Suele pasar al editarlo con TextEdit (mete comillas curvas).")
+        print("   Recréalo limpio con este comando (una sola línea):")
+        print('   printf \'[usuarios]\\nSBC001 = "TU_CLAVE"\\n\\n[supabase]\\n'
+              'url = "https://TU_PROYECTO.supabase.co"\\nkey = "sb_secret_..."\\n'
+              'bucket = "sbc-demanda"\\n\' > .streamlit/secrets.toml')
+        sys.exit(1)
+
+    if "supabase" not in secrets:
+        print("❌ Falta la sección [supabase] en secrets.toml.")
+        sys.exit(1)
+
     import types
     st_mock = types.ModuleType("streamlit")
     st_mock.secrets = secrets
