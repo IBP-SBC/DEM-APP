@@ -89,15 +89,49 @@ data, err = cargar_feature_store()
 
 if err:
     st.error(err)
-    st.info("""
-    **Cómo arreglar esto:**
-    
-    Abre la terminal en la carpeta del proyecto y ejecuta:
-    ```bash
-    uv run python src/features/build_features.py
-    ```
-    Eso construye el feature store. Después recarga esta página.
-    """)
+    if MODO_NUBE:
+        # En la nube NO se corre build_features: los artefactos vienen de
+        # Supabase por hidratación. Mostrar diagnóstico en vez de mandar a
+        # un paso que no aplica.
+        st.markdown("### ☁️ Diagnóstico de la nube")
+        ok, msg = cloud.probar_conexion()
+        if ok:
+            st.success(f"Conexión a Supabase: ✓ {msg}")
+        else:
+            st.error(f"Conexión a Supabase: ✗ {msg}")
+        archivos_proc = cloud.listar("processed")
+        archivos_state = cloud.listar("state")
+        res = st.session_state.get("_hidratacion_res", {})
+        st.write(f"**Archivos en el bucket** · processed: {len(archivos_proc)} · "
+                 f"state: {len(archivos_state)}")
+        if archivos_proc:
+            st.caption("processed/: " + ", ".join(archivos_proc[:10]))
+        st.write(f"**Hidratación al iniciar:** {res.get('processed',0)} artefactos + "
+                 f"{res.get('modelos',0)} modelos + {res.get('estado',0)} estado descargados.")
+        st.info(
+            "**Qué hacer:**\n\n"
+            "1. Si la conexión falla → revisá los *Secrets* en Streamlit "
+            "(sección `[supabase]` con url, key y `bucket = \"sbc-demanda\"`).\n"
+            "2. Si la conexión está OK pero el bucket está vacío → en tu Mac corré "
+            "**`5-Subir a la nube`** (antes asegurate de tener los artefactos: "
+            "corré **`4-Reentrenar modelo`** si `data/processed/` está vacío).\n"
+            "3. Si el bucket tiene archivos pero no bajaron → puede ser un tema de "
+            "políticas del bucket; avisame y ajustamos los permisos."
+        )
+        if st.button("🔄 Reintentar sincronización"):
+            st.session_state.pop("_hidratado", None)
+            st.cache_data.clear()
+            st.rerun()
+    else:
+        st.info("""
+        **Cómo arreglar esto (escritorio):**
+
+        Abre la terminal en la carpeta del proyecto y ejecuta:
+        ```bash
+        uv run python src/features/build_features.py
+        ```
+        Eso construye el feature store. Después recarga esta página.
+        """)
     st.stop()
 
 isbn = data["isbn"]
