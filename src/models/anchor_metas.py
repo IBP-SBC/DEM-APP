@@ -40,12 +40,7 @@ DATA_STATE = ROOT / "data" / "state"
 # =========================================================================
 # METAS CONSERVADORAS INMUTABLES
 # =========================================================================
-METAS_BIBLIAS = {
-    2027: 1_673_298,
-    2028: 2_139_351,
-    2029: 2_666_471,
-    2030: 3_243_508,
-}
+from core.config import METAS_BIBLIAS  # objetivos estrategicos (fuente unica)
 
 
 def calcular_aporte_catalogo(

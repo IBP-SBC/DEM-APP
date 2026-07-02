@@ -11,5 +11,5 @@ scikit-learn==1.8.0
 joblib==1.5.3
 pyarrow==24.0.0
 openpyxl==3.1.5
-python-calamine==0.4.0
+# python-calamine==0.4.0  # OPCIONAL: acelera lectura de Excel; el codigo usa openpyxl si falta
 requests==2.33.1

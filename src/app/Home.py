@@ -37,6 +37,15 @@ DATA_PROC = ROOT / "data" / "processed"
 # app corre 100% en local (modo escritorio).
 from core import auth, cloud_storage as cloud
 
+# Guardián defensivo: si secrets.toml quedó con comillas curvas (TextEdit/
+# Notepad) o BOM, se sanea en disco antes de que Streamlit lo lea, para que la
+# app no truene por un secrets mal formado.
+try:
+    from core.secrets_guard import sanear_secrets
+    sanear_secrets(ROOT)
+except Exception:
+    pass
+
 # 1) Login (solo se exige si hay usuarios configurados en st.secrets)
 if not auth.gate():
     st.stop()
@@ -50,8 +59,8 @@ if cloud.nube_activa() and not st.session_state.get("_hidratado"):
 
 MODO_NUBE = cloud.nube_activa()
 
-# Metas conservadoras 2027-2030 (inmutables)
-METAS_BIBLIAS = {2027: 1_673_298, 2028: 2_139_351, 2029: 2_666_471, 2030: 3_243_508}
+# Metas conservadoras 2027-2030 (objetivos estrategicos). Fuente unica: core/config.py
+from core.config import METAS_BIBLIAS
 
 
 # =========================================================================

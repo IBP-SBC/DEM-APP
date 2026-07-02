@@ -199,18 +199,33 @@ def cargar_historico() -> pd.DataFrame:
 # 2. MAPEO CLARIDAD
 # =========================================================================
 def cargar_mapeo_claridad() -> pd.DataFrame:
-    """Lee el CSV de sustitución de TACOs por familia CLARIDAD."""
-    df = pd.read_csv(PATH_CLARIDAD, sep=";", encoding="utf-8")
-    df.columns = [c.strip().lstrip("\ufeff") for c in df.columns]
-    df = df.rename(columns={
-        "SKU TACO MP": "taco_mp",
-        "Descripcion TACO MP": "descripcion_taco",
-        "SUSTITUTO": "taco_destino_claridad",
-    })
-    df["taco_mp"] = df["taco_mp"].astype(str).str.strip()
-    df["taco_destino_claridad"] = df["taco_destino_claridad"].astype(str).str.strip()
-    df["migra_a_claridad"] = df["taco_destino_claridad"].str.upper() != "NO"
-    return df
+    """Lee el CSV de sustitución de TACOs por familia CLARIDAD.
+
+    Es un enriquecimiento OPCIONAL: si el archivo no está, se devuelve un mapeo
+    vacío y el feature store se construye igual (sin info de migración a
+    CLARIDAD), en vez de tronar. Útil cuando se entrena en una máquina que no
+    tiene ese insumo."""
+    cols = ["taco_mp", "descripcion_taco", "taco_destino_claridad", "migra_a_claridad"]
+    if not PATH_CLARIDAD.exists():
+        print(f"   ⚠️  No se encontró {PATH_CLARIDAD.name} (mapeo CLARIDAD opcional). "
+              f"Se continúa SIN info de migración a CLARIDAD.")
+        return pd.DataFrame(columns=cols)
+    try:
+        df = pd.read_csv(PATH_CLARIDAD, sep=";", encoding="utf-8")
+        df.columns = [c.strip().lstrip("\ufeff") for c in df.columns]
+        df = df.rename(columns={
+            "SKU TACO MP": "taco_mp",
+            "Descripcion TACO MP": "descripcion_taco",
+            "SUSTITUTO": "taco_destino_claridad",
+        })
+        df["taco_mp"] = df["taco_mp"].astype(str).str.strip()
+        df["taco_destino_claridad"] = df["taco_destino_claridad"].astype(str).str.strip()
+        df["migra_a_claridad"] = df["taco_destino_claridad"].str.upper() != "NO"
+        return df
+    except Exception as e:
+        print(f"   ⚠️  No se pudo leer {PATH_CLARIDAD.name} ({e}). "
+              f"Se continúa SIN info de migración a CLARIDAD.")
+        return pd.DataFrame(columns=cols)
 
 
 # Cronograma de inicio CLARIDAD (de v3.2 — no cambiar sin consultar)
